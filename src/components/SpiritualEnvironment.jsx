@@ -27,13 +27,15 @@ const BEAM_HEIGHT = 0.1;
 const ROOF_GROUP_OFFSET = BEAM_HEIGHT / 2 - (ROOF_OVERHANG_LOCAL_Y - ROOF_OVERHANG_HEIGHT / 2);
 // = 0.05 - (-0.05) = 0.10
 
-// Total height a PagodaTier adds above its base y:
-// walls(h) + roof group offset(0.10) + ridge ornament(0.50)
-// The ridge ornament top is roughly the peak. We use it as the stacking point.
-const TIER_EXTRA_ABOVE_WALLS = ROOF_GROUP_OFFSET + ROOF_RIDGE_LOCAL_Y; // 0.10 + 0.50 = 0.60
+// The next tier sits on top of this tier's roof overhang (not the ridge tip).
+// Roof overhang top = ROOF_GROUP_OFFSET + ROOF_OVERHANG_LOCAL_Y + ROOF_OVERHANG_HEIGHT/2
+//                   = 0.10 + (-0.02) + 0.03 = 0.11
+// The cone rises above this but the next tier's base sits on the flat overhang.
+const TIER_STACKING_ABOVE_WALLS = ROOF_GROUP_OFFSET + ROOF_OVERHANG_LOCAL_Y + ROOF_OVERHANG_HEIGHT / 2;
+// = 0.10 + (-0.02) + 0.03 = 0.11
 
-function tierTotalHeight(h) {
-  return h + TIER_EXTRA_ABOVE_WALLS;
+function tierStackHeight(h) {
+  return h + TIER_STACKING_ABOVE_WALLS;
 }
 
 // ─── Curved Pagoda Roof ───
@@ -126,22 +128,24 @@ function Pagoda({ position }) {
   const f3Y = f2Top + f3H / 2;                 // 0.35 — center
   const f3Top = f2Top + f3H;                    // 0.40
 
-  // ─── Tier stacking: each tier starts where the previous one ends ───
-  const tier1Y = f3Top;                         // 0.40
+  // ─── Tier stacking: next tier sits on the roof overhang of the previous ───
+  const tier1Y = f3Top;                                  // 0.40
   const tier1H = 2.6;
-  const tier1Top = tier1Y + tierTotalHeight(tier1H); // 0.40 + 3.20 = 3.60
+  const tier1Top = tier1Y + tierStackHeight(tier1H);     // 0.40 + 2.71 = 3.11
 
-  const tier2Y = tier1Top;                      // 3.60
+  const tier2Y = tier1Top;                               // 3.11
   const tier2H = 2.1;
-  const tier2Top = tier2Y + tierTotalHeight(tier2H); // 3.60 + 2.70 = 6.30
+  const tier2Top = tier2Y + tierStackHeight(tier2H);     // 3.11 + 2.21 = 5.32
 
-  const tier3Y = tier2Top;                      // 6.30
+  const tier3Y = tier2Top;                               // 5.32
   const tier3H = 1.6;
-  const tier3Top = tier3Y + tierTotalHeight(tier3H); // 6.30 + 2.20 = 8.50
+  const tier3Top = tier3Y + tierStackHeight(tier3H);     // 5.32 + 1.71 = 7.03
 
-  // ─── Spire: base cylinder (height 0.8) bottom sits on tier3 top ───
+  // ─── Spire sits on tier3 roof cone peak ───
+  // Cone peak relative to tier3 base = roofGroupY + ROOF_CONE_LOCAL_Y + ROOF_CONE_HEIGHT/2
+  const conePeakAboveTier = ROOF_GROUP_OFFSET + ROOF_CONE_LOCAL_Y + ROOF_CONE_HEIGHT / 2;
   const spireBaseH = 0.8;
-  const spireY = tier3Top + spireBaseH / 2;     // 8.50 + 0.40 = 8.90
+  const spireY = tier3Y + tier3H + conePeakAboveTier + spireBaseH / 2;
 
   // ─── Door position: flush with Tier 1 front face ───
   // Tier 1 is centered at pagoda origin. d=5.5, front face at z = d/2 = 2.75

@@ -44,7 +44,7 @@ export default function Scene({
 
   return (
     <Canvas
-      camera={{ position: [5, 3, 8], fov: 45 }}
+      camera={{ position: [8, 5, 12], fov: 42 }}
       shadows
       frameloop={paused ? 'demand' : 'always'}
       gl={{ antialias: true, alpha: false }}

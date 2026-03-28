@@ -2,7 +2,7 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const SMOKE_COUNT = 35;
+const SMOKE_COUNT = 15;
 
 export default function IncenseSmoke({ position = [0, 0.4, 3], mood = null }) {
   const meshRef = useRef();

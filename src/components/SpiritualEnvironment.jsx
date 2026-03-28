@@ -311,13 +311,9 @@ export default function SpiritualEnvironment() {
       {/* Torii gate entrance */}
       <ToriiGate position={[0, 0, 10]} />
 
-      {/* Stone lanterns lining the path */}
-      <StoneLantern position={[-2.5, 0, 6]} />
-      <StoneLantern position={[2.5, 0, 6]} />
-      <StoneLantern position={[-2.5, 0, 2]} />
-      <StoneLantern position={[2.5, 0, 2]} />
-      <StoneLantern position={[-3, 0, -2]} />
-      <StoneLantern position={[3, 0, -2]} />
+      {/* Stone lanterns */}
+      <StoneLantern position={[-2.5, 0, 4]} />
+      <StoneLantern position={[2.5, 0, 4]} />
 
       {/* Incense burner in front of buddha */}
       <IncenseBurner position={[0, 0, 3]} />

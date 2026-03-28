@@ -20,7 +20,8 @@ function saveSettings(settings) {
 
 export function useSettings() {
   const [settings, setSettings] = useState(loadSettings);
-  const [showSettings, setShowSettings] = useState(!settings.hasCompletedSetup);
+  // Don't auto-show modal — let users explore the temple first
+  const [showSettings, setShowSettings] = useState(false);
 
   const updateSettings = useCallback((updates) => {
     setSettings((prev) => {

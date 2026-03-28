@@ -13,11 +13,11 @@ export default function SettingsModal({
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
   const [error, setError] = useState('');
 
+  const handleSkip = () => {
+    onSave('', '');
+  };
+
   const handleSave = () => {
-    if (!anthropicKey.trim() && !openaiKey.trim()) {
-      setError('Please enter at least one API key to continue.');
-      return;
-    }
     if (anthropicKey.trim() && !anthropicKey.startsWith('sk-ant-')) {
       setError('Anthropic API keys start with "sk-ant-". Please check your key.');
       return;
@@ -138,7 +138,11 @@ export default function SettingsModal({
           <button className="settings-save-btn" onClick={handleSave}>
             {isSetup ? 'Begin Journey' : 'Save Keys'}
           </button>
-          {!isSetup && (
+          {isSetup ? (
+            <button className="settings-cancel-btn" onClick={handleSkip}>
+              Skip — Explore Temple
+            </button>
+          ) : (
             <>
               <button className="settings-cancel-btn" onClick={onClose}>
                 Cancel
@@ -152,7 +156,7 @@ export default function SettingsModal({
 
         {isSetup && (
           <p className="settings-footer">
-            You need at least one API key. Both providers offer pay-as-you-go pricing.
+            API keys enable AI chat. You can explore the temple, journeys, and ambient features without one.
           </p>
         )}
       </div>

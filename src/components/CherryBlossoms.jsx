@@ -2,7 +2,7 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const PETAL_COUNT = 60;
+const PETAL_COUNT = 25;
 
 function FallingPetals({ center, area = 5, height = 6, speedMultiplier = 1.0 }) {
   const meshRef = useRef();

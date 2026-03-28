@@ -64,10 +64,10 @@ export default function JourneyPanel({
           &#9664;
         </button>
         <button className="journey-ctrl-btn" onClick={isPlaying ? onPause : onResume}>
-          {isPlaying ? '&#10074;&#10074;' : '&#9654;'}
+          {isPlaying ? '\u275A\u275A' : '\u25B6'}
         </button>
         <button className="journey-ctrl-btn" onClick={onNext}>
-          &#9654;&#9654;
+          {'\u25B6\u25B6'}
         </button>
         <button className="journey-ctrl-btn journey-skip" onClick={onSkip}>
           Exit

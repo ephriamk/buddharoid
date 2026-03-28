@@ -25,8 +25,8 @@ export default function BuddharoidModel({ isSpeaking = false }) {
     if (!groupRef.current) return;
     const t = state.clock.elapsedTime;
 
-    // Floating animation
-    groupRef.current.position.y = Math.sin(t * 0.8) * 0.15;
+    // Subtle breathing float, grounded at y=0
+    groupRef.current.position.y = Math.sin(t * 0.8) * 0.05;
     groupRef.current.rotation.y = Math.sin(t * 0.3) * 0.1;
 
     // Pulse when speaking
@@ -55,10 +55,10 @@ export default function BuddharoidModel({ isSpeaking = false }) {
 
   return (
     <group ref={groupRef}>
-      <primitive object={scene} scale={1.5} position={[0, -1.5, 0]} />
+      <primitive object={scene} scale={0.8} position={[0, 0, 0]} />
 
-      <mesh ref={glowRef} position={[0, 0.5, -0.5]}>
-        <ringGeometry args={[1.2, 1.8, 64]} />
+      <mesh ref={glowRef} position={[0, 1, -0.3]}>
+        <ringGeometry args={[0.8, 1.2, 64]} />
         <meshBasicMaterial
           color="#ffcc44"
           transparent
@@ -72,7 +72,7 @@ export default function BuddharoidModel({ isSpeaking = false }) {
         color="#ffaa00"
         intensity={isSpeaking ? 3 : 0.8}
         distance={5}
-        position={[0, 0, 1]}
+        position={[0, 0.8, 0.5]}
       />
     </group>
   );

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Scene from './components/Scene';
 import ChatPanel from './components/ChatPanel';
 import SettingsModal from './components/SettingsModal';
@@ -9,6 +9,11 @@ import { useChat } from './hooks/useChat';
 import { useMemory } from './hooks/useMemory';
 import { useSettings } from './hooks/useSettings';
 import { useMood } from './hooks/useMood';
+import { useVoice } from './hooks/useVoice';
+import { useJourney } from './hooks/useJourney';
+import { useDayNightCycle } from './hooks/useDayNightCycle';
+import { useAmbientAudio } from './hooks/useAmbientAudio';
+import { MOOD_PRESETS } from './config/moodPresets';
 
 export default function App() {
   const {
@@ -50,7 +55,45 @@ export default function App() {
     clearChat,
   } = useChat(userId, isFirstVisit, sessionCount, userName, getApiKey);
 
-  const mood = useMood(messages);
+  // Voice
+  const voice = useVoice();
+  const lastMessageCount = useRef(messages.length);
+
+  // Auto-speak new assistant messages when voice is enabled
+  useEffect(() => {
+    if (voice.voiceEnabled && messages.length > lastMessageCount.current) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg?.role === 'assistant') {
+        voice.speak(lastMsg.content);
+      }
+    }
+    lastMessageCount.current = messages.length;
+  }, [messages, voice.voiceEnabled]);
+
+  // Mood
+  const chatMood = useMood(messages);
+
+  // Journey
+  const journey = useJourney();
+
+  // Merge mood: journey override takes priority
+  const effectiveMood = journey.moodOverride
+    ? { ...chatMood, mood: journey.moodOverride, preset: MOOD_PRESETS[journey.moodOverride] || chatMood.preset }
+    : chatMood;
+
+  // Speaking: TTS-driven when voice active, fallback to chat heuristic
+  const effectiveSpeaking = voice.voiceEnabled ? voice.isVoiceSpeaking : isSpeaking;
+
+  // Day/Night
+  const dayNight = useDayNightCycle();
+
+  // Ambient Audio
+  const ambientAudio = useAmbientAudio();
+
+  // Update audio for phase changes
+  useEffect(() => {
+    ambientAudio.updateForPhase(dayNight.phase);
+  }, [dayNight.phase, ambientAudio.updateForPhase]);
 
   // Loading state
   const [loadProgress, setLoadProgress] = useState(0);
@@ -83,14 +126,37 @@ export default function App() {
     }
   }, [userId]);
 
+  const handleToggleVoice = useCallback(() => {
+    if (voice.isListening) {
+      voice.stopListening();
+    } else {
+      voice.startListening((transcript) => {
+        if (transcript && hasAnyKey) {
+          sendMessage(transcript);
+        }
+      });
+    }
+  }, [voice, hasAnyKey, sendMessage]);
+
+  const handleStartJourney = useCallback((journeyId) => {
+    journey.startJourney(journeyId);
+  }, [journey]);
+
+  // Speak journey narration when voice enabled
+  const prevNarration = useRef('');
+  useEffect(() => {
+    if (voice.voiceEnabled && journey.narration && journey.narration !== prevNarration.current) {
+      voice.speak(journey.narration);
+    }
+    prevNarration.current = journey.narration;
+  }, [journey.narration, voice.voiceEnabled]);
+
   return (
     <>
-      {/* Loading screen overlay */}
       {!loaded && (
         <LoadingScreen progress={loadProgress} onFadeComplete={handleLoadComplete} />
       )}
 
-      {/* Onboarding overlay */}
       {loaded && showOnboarding && (
         <Onboarding onComplete={handleOnboardingComplete} />
       )}
@@ -98,10 +164,14 @@ export default function App() {
       <div className="app">
         <div className={`scene-container ${!sceneExpanded ? 'scene-collapsed' : ''}`}>
           <Scene
-            isSpeaking={isSpeaking}
-            mood={mood}
+            isSpeaking={effectiveSpeaking}
+            mood={effectiveMood}
             onProgress={handleProgress}
             paused={!sceneExpanded}
+            getTimeOfDay={dayNight.getTimeOfDay}
+            phase={dayNight.phase}
+            journeyCameraTarget={journey.cameraTarget}
+            journeyActive={!!journey.activeJourney}
           />
           <div className="scene-overlay">
             <h1 className="title-overlay">BUDDHAROID</h1>
@@ -109,7 +179,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Mobile scene toggle */}
         <SceneToggle
           expanded={sceneExpanded}
           onToggle={() => setSceneExpanded(e => !e)}
@@ -130,9 +199,18 @@ export default function App() {
           onOpenSettings={() => setShowSettings(true)}
           availableProviders={availableProviders}
           hasAnyKey={hasAnyKey}
+          voiceSupported={voice.voiceSupported}
+          isListening={voice.isListening}
+          transcript={voice.transcript}
+          voiceEnabled={voice.voiceEnabled}
+          onToggleVoice={handleToggleVoice}
+          onToggleVoiceEnabled={() => voice.setVoiceEnabled(v => !v)}
+          journey={journey}
+          onStartJourney={handleStartJourney}
+          audioEnabled={ambientAudio.audioEnabled}
+          onToggleAudio={ambientAudio.toggleAudio}
         />
 
-        {/* Settings / API Key Modal */}
         {showSettings && (
           <SettingsModal
             isSetup={!settings.hasCompletedSetup}

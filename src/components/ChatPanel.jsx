@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import ChatMessage from './ChatMessage';
+import VoiceButton from './VoiceButton';
+import JourneyPanel from './JourneyPanel';
 
 export default function ChatPanel({
   messages,
@@ -16,13 +18,26 @@ export default function ChatPanel({
   onOpenSettings,
   availableProviders,
   hasAnyKey,
+  // Voice props
+  voiceSupported,
+  isListening,
+  transcript,
+  voiceEnabled,
+  onToggleVoice,
+  onToggleVoiceEnabled,
+  // Journey props
+  journey,
+  onStartJourney,
+  // Audio props
+  audioEnabled,
+  onToggleAudio,
 }) {
   const [input, setInput] = useState('');
   const [showMemoryMenu, setShowMemoryMenu] = useState(false);
+  const [showJourneys, setShowJourneys] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Auto-switch to available provider if current one has no key
   useEffect(() => {
     if (availableProviders && !availableProviders.includes(provider) && availableProviders.length > 0) {
       setProvider(availableProviders[0]);
@@ -55,7 +70,7 @@ export default function ChatPanel({
       {/* Header */}
       <div className="chat-header">
         <div className="chat-title">
-          <span className="chat-title-icon">☸️</span>
+          <span className="chat-title-icon">&#x2638;&#xFE0F;</span>
           <h2>Buddharoid</h2>
           <span className="chat-subtitle">
             {userName ? `Guide for ${userName}` : 'Digital Bodhisattva'}
@@ -79,23 +94,35 @@ export default function ChatPanel({
             </button>
           </div>
 
-          {/* Settings button */}
+          <button className="settings-btn" onClick={onOpenSettings} title="Settings">&#x2699;</button>
+
+          {/* Audio toggle */}
           <button
-            className="settings-btn"
-            onClick={onOpenSettings}
-            title="API Key Settings"
+            className={`settings-btn ${audioEnabled ? 'audio-active' : ''}`}
+            onClick={onToggleAudio}
+            title={audioEnabled ? 'Mute ambient sounds' : 'Enable ambient sounds'}
           >
-            ⚙
+            {audioEnabled ? '\u{1F50A}' : '\u{1F507}'}
           </button>
 
-          {/* Memory indicator */}
+          {/* Voice toggle */}
+          {voiceSupported && (
+            <button
+              className={`settings-btn ${voiceEnabled ? 'voice-enabled' : ''}`}
+              onClick={onToggleVoiceEnabled}
+              title={voiceEnabled ? 'Disable voice responses' : 'Enable voice responses'}
+            >
+              {voiceEnabled ? '\u{1F508}' : '\u{1F568}'}
+            </button>
+          )}
+
           <div className="memory-indicator">
             <button
               className="memory-btn"
               onClick={() => setShowMemoryMenu(!showMemoryMenu)}
-              title={`${memoryCount} memories · Session ${sessionCount}`}
+              title={`${memoryCount} memories`}
             >
-              🧠 {memoryCount}
+              &#x1F9E0; {memoryCount}
             </button>
             {showMemoryMenu && (
               <div className="memory-menu">
@@ -110,16 +137,13 @@ export default function ChatPanel({
             )}
           </div>
 
-          <button className="clear-btn" onClick={clearChat} title="Clear chat">
-            ✕
-          </button>
+          <button className="clear-btn" onClick={clearChat} title="Clear chat">&#x2715;</button>
         </div>
       </div>
 
-      {/* No API key banner */}
       {!hasAnyKey && (
         <div className="no-key-banner" onClick={onOpenSettings}>
-          <span>⚙ Add your API key in Settings to start chatting</span>
+          <span>&#x2699; Add your API key in Settings to chat — or explore the temple freely below</span>
         </div>
       )}
 
@@ -130,13 +154,11 @@ export default function ChatPanel({
         ))}
         {isLoading && (
           <div className="chat-message assistant">
-            <div className="message-avatar">🤖</div>
+            <div className="message-avatar">&#x1F916;</div>
             <div className="message-content">
               <div className="message-role">Buddharoid</div>
               <div className="typing-indicator">
-                <span></span>
-                <span></span>
-                <span></span>
+                <span></span><span></span><span></span>
               </div>
             </div>
           </div>
@@ -144,13 +166,39 @@ export default function ChatPanel({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Actions */}
-      <div className="quick-actions">
-        <button onClick={() => sendMessage('Guide me through a meditation')} disabled={isLoading || !hasAnyKey}>🧘 Meditate</button>
-        <button onClick={() => sendMessage('Give me a breathing exercise')} disabled={isLoading || !hasAnyKey}>🌬️ Breathe</button>
-        <button onClick={() => sendMessage('Share some Buddhist wisdom with me')} disabled={isLoading || !hasAnyKey}>📿 Wisdom</button>
-        <button onClick={() => sendMessage('Give me a journal prompt for reflection')} disabled={isLoading || !hasAnyKey}>📝 Journal</button>
-      </div>
+      {/* Journey panel or quick actions */}
+      {showJourneys || journey?.activeJourney ? (
+        <JourneyPanel
+          activeJourney={journey?.activeJourney}
+          currentStep={journey?.currentStep}
+          totalSteps={journey?.totalSteps}
+          narration={journey?.narration}
+          isPlaying={journey?.isPlaying}
+          onStart={onStartJourney}
+          onNext={journey?.nextStep}
+          onPrevious={journey?.previousStep}
+          onSkip={journey?.skipJourney}
+          onPause={journey?.pauseJourney}
+          onResume={journey?.resumeJourney}
+          onClose={() => setShowJourneys(false)}
+        />
+      ) : (
+        <div className="quick-actions">
+          <button onClick={() => setShowJourneys(true)}>&#x1F3EF; Journey</button>
+          <button onClick={() => sendMessage('Guide me through a meditation')} disabled={isLoading || !hasAnyKey}>&#x1F9D8; Meditate</button>
+          <button onClick={() => sendMessage('Give me a breathing exercise')} disabled={isLoading || !hasAnyKey}>&#x1F32C;&#xFE0F; Breathe</button>
+          <button onClick={() => sendMessage('Share some Buddhist wisdom with me')} disabled={isLoading || !hasAnyKey}>&#x1F4FF; Wisdom</button>
+          <button onClick={() => sendMessage('Give me a journal prompt for reflection')} disabled={isLoading || !hasAnyKey}>&#x1F4DD; Journal</button>
+        </div>
+      )}
+
+      {/* Voice transcript overlay */}
+      {isListening && transcript && (
+        <div className="voice-transcript">
+          <span className="voice-transcript-dot" />
+          {transcript}
+        </div>
+      )}
 
       {/* Input */}
       <form className="chat-input-form" onSubmit={handleSubmit}>
@@ -159,16 +207,23 @@ export default function ChatPanel({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={hasAnyKey ? 'Ask the Buddharoid for guidance...' : 'Add an API key in Settings to begin...'}
+          placeholder={hasAnyKey ? 'Ask the Buddharoid for guidance...' : 'Add an API key to chat, or explore journeys...'}
           rows={1}
           disabled={isLoading || !hasAnyKey}
         />
+        {voiceSupported && hasAnyKey && (
+          <VoiceButton
+            isListening={isListening}
+            onToggle={onToggleVoice}
+            disabled={isLoading}
+          />
+        )}
         <button
           type="submit"
           disabled={isLoading || !input.trim() || !hasAnyKey}
           className="send-btn"
         >
-          {isLoading ? '◎' : '➤'}
+          {isLoading ? '\u25CE' : '\u27A4'}
         </button>
       </form>
     </div>

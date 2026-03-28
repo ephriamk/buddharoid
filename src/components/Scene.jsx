@@ -1,14 +1,16 @@
 import { Suspense, useRef, useEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Sky, Environment, useProgress } from '@react-three/drei';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Environment, useProgress } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
-import * as THREE from 'three';
 import BuddharoidModel from './BuddharoidModel';
 import ParticleAura from './ParticleAura';
 import SpiritualEnvironment from './SpiritualEnvironment';
 import CherryBlossoms from './CherryBlossoms';
 import IncenseSmoke from './IncenseSmoke';
-import { MOOD_PRESETS } from '../config/moodPresets';
+import DayNightSky from './DayNightSky';
+import AmbientParticles from './AmbientParticles';
+import KoiFish from './KoiFish';
+import JourneyCamera from './JourneyCamera';
 
 function LoadingFallback() {
   return (
@@ -19,7 +21,6 @@ function LoadingFallback() {
   );
 }
 
-// Reports loading progress to parent
 function ProgressReporter({ onProgress }) {
   const { progress } = useProgress();
   useEffect(() => {
@@ -28,39 +29,18 @@ function ProgressReporter({ onProgress }) {
   return null;
 }
 
-// Smoothly transitions scene lighting/fog based on mood
-function MoodLighting({ mood }) {
-  const ambientRef = useRef();
-  const fogRef = useRef();
-  const preset = MOOD_PRESETS[mood?.mood] || MOOD_PRESETS.serene;
-
-  useFrame(() => {
-    if (ambientRef.current) {
-      const targetColor = new THREE.Color(preset.ambientColor);
-      ambientRef.current.color.lerp(targetColor, 0.02);
-      ambientRef.current.intensity = THREE.MathUtils.lerp(
-        ambientRef.current.intensity, preset.ambientIntensity, 0.02
-      );
-    }
-    if (fogRef.current) {
-      const targetFogColor = new THREE.Color(preset.fogColor);
-      fogRef.current.color.lerp(targetFogColor, 0.02);
-      fogRef.current.near = THREE.MathUtils.lerp(fogRef.current.near, preset.fogNear, 0.02);
-      fogRef.current.far = THREE.MathUtils.lerp(fogRef.current.far, preset.fogFar, 0.02);
-    }
-  });
-
-  return (
-    <>
-      <ambientLight ref={ambientRef} intensity={0.25} color="#ffe8cc" />
-      <fog ref={fogRef} attach="fog" args={['#c9b8a0', 20, 55]} />
-    </>
-  );
-}
-
-export default function Scene({ isSpeaking = false, mood = null, onProgress, paused = false }) {
+export default function Scene({
+  isSpeaking = false,
+  mood = null,
+  onProgress,
+  paused = false,
+  getTimeOfDay,
+  phase = 'day',
+  journeyCameraTarget = null,
+  journeyActive = false,
+}) {
   const isDesktop = typeof window !== 'undefined' && window.innerWidth > 768;
-  const shadowSize = isDesktop ? 2048 : 1024;
+  const controlsRef = useRef();
 
   return (
     <Canvas
@@ -72,22 +52,8 @@ export default function Scene({ isSpeaking = false, mood = null, onProgress, pau
     >
       <ProgressReporter onProgress={onProgress || (() => {})} />
 
-      {/* Mood-reactive ambient + fog */}
-      <MoodLighting mood={mood} />
-
-      {/* Main sun */}
-      <directionalLight
-        position={[8, 12, 5]}
-        intensity={1.5}
-        color="#fff0d0"
-        castShadow
-        shadow-mapSize={[shadowSize, shadowSize]}
-        shadow-camera-far={40}
-        shadow-camera-left={-15}
-        shadow-camera-right={15}
-        shadow-camera-top={15}
-        shadow-camera-bottom={-15}
-      />
+      {/* Day/Night cycle: sky, sun, ambient, fog */}
+      <DayNightSky getTimeOfDay={getTimeOfDay || (() => 0.45)} />
 
       {/* Back fill */}
       <directionalLight position={[-5, 4, -6]} intensity={0.35} color="#8899cc" />
@@ -106,14 +72,8 @@ export default function Scene({ isSpeaking = false, mood = null, onProgress, pau
       <pointLight position={[-3.5, 1.5, 2]} intensity={0.4} color="#ff8844" distance={6} />
       <pointLight position={[3.5, 1.5, 2]} intensity={0.4} color="#ff8844" distance={6} />
 
-      <Sky
-        distance={450000}
-        sunPosition={[8, 3, -5]}
-        inclination={mood?.preset?.skyInclination || 0.48}
-        azimuth={0.25}
-        rayleigh={0.4}
-        turbidity={8}
-      />
+      {/* Journey camera controller */}
+      <JourneyCamera target={journeyCameraTarget} controlsRef={controlsRef} />
 
       <Suspense fallback={<LoadingFallback />}>
         <BuddharoidModel isSpeaking={isSpeaking} mood={mood} />
@@ -121,10 +81,11 @@ export default function Scene({ isSpeaking = false, mood = null, onProgress, pau
         <SpiritualEnvironment />
         <CherryBlossoms mood={mood} />
         <IncenseSmoke mood={mood} />
+        <AmbientParticles phase={phase} />
+        <KoiFish />
         <Environment preset="sunset" backgroundIntensity={0} environmentIntensity={0.3} />
       </Suspense>
 
-      {/* Post-processing - desktop only */}
       {isDesktop && (
         <EffectComposer>
           <Bloom intensity={0.25} luminanceThreshold={0.9} luminanceSmoothing={0.4} />
@@ -133,14 +94,16 @@ export default function Scene({ isSpeaking = false, mood = null, onProgress, pau
       )}
 
       <OrbitControls
+        ref={controlsRef}
         enablePan={false}
         enableZoom={isDesktop}
+        enabled={!journeyActive}
         minDistance={3}
         maxDistance={isDesktop ? 18 : 12}
         maxPolarAngle={Math.PI / 2.05}
         minPolarAngle={Math.PI / 6}
         target={[0, 0.5, 0]}
-        autoRotate
+        autoRotate={!journeyActive}
         autoRotateSpeed={isDesktop ? 0.15 : 0.25}
         enableDamping
         dampingFactor={0.05}

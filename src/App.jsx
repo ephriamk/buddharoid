@@ -5,6 +5,7 @@ import SettingsModal from './components/SettingsModal';
 import LoadingScreen from './components/LoadingScreen';
 import Onboarding from './components/Onboarding';
 import SceneToggle from './components/SceneToggle';
+import SocialBar from './components/SocialBar';
 import { useChat } from './hooks/useChat';
 import { useMemory } from './hooks/useMemory';
 import { useSettings } from './hooks/useSettings';
@@ -176,6 +177,7 @@ export default function App() {
           <div className="scene-overlay">
             <h1 className="title-overlay">BUDDHAROID</h1>
             <p className="subtitle-overlay">Seek Enlightenment Through Code</p>
+            <SocialBar />
           </div>
         </div>
 

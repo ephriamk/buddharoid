@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 // ─── Configure these ───
-const X_URL = 'https://x.com/buddharoid';
+const X_URL = 'https://x.com/i/communities/2037974999391449227';
 const PUMPFUN_URL = 'https://pump.fun/coin/53uELaexkz95hR4J17whkAWh9Hr2a1xFi7WEp5Fepump';
 const SOLANA_CONTRACT = '53uELaexkz95hR4J17whkAWh9Hr2a1xFi7WEp5Fepump';
 

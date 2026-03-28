@@ -1,11 +1,13 @@
 import { useState, useCallback } from 'react';
 import Scene from './components/Scene';
 import ChatPanel from './components/ChatPanel';
+import SettingsModal from './components/SettingsModal';
 import LoadingScreen from './components/LoadingScreen';
 import Onboarding from './components/Onboarding';
 import SceneToggle from './components/SceneToggle';
 import { useChat } from './hooks/useChat';
 import { useMemory } from './hooks/useMemory';
+import { useSettings } from './hooks/useSettings';
 import { useMood } from './hooks/useMood';
 
 export default function App() {
@@ -20,6 +22,25 @@ export default function App() {
   } = useMemory();
 
   const {
+    settings,
+    showSettings,
+    setShowSettings,
+    completeSetup,
+    clearKeys,
+    hasAnyKey,
+    availableProviders,
+  } = useSettings();
+
+  const getApiKey = useCallback(
+    (provider) => {
+      if (provider === 'claude') return settings.anthropicKey || undefined;
+      if (provider === 'openai') return settings.openaiKey || undefined;
+      return undefined;
+    },
+    [settings.anthropicKey, settings.openaiKey]
+  );
+
+  const {
     messages,
     isLoading,
     isSpeaking,
@@ -27,7 +48,7 @@ export default function App() {
     setProvider,
     sendMessage,
     clearChat,
-  } = useChat(userId, isFirstVisit, sessionCount, userName);
+  } = useChat(userId, isFirstVisit, sessionCount, userName, getApiKey);
 
   const mood = useMood(messages);
 
@@ -106,7 +127,21 @@ export default function App() {
           userName={userName}
           onClearMemories={clearMemories}
           onJournalSave={saveJournalEntry}
+          onOpenSettings={() => setShowSettings(true)}
+          availableProviders={availableProviders}
+          hasAnyKey={hasAnyKey}
         />
+
+        {/* Settings / API Key Modal */}
+        {showSettings && (
+          <SettingsModal
+            isSetup={!settings.hasCompletedSetup}
+            settings={settings}
+            onSave={completeSetup}
+            onClose={() => setShowSettings(false)}
+            onClearKeys={clearKeys}
+          />
+        )}
       </div>
     </>
   );

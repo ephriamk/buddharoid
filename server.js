@@ -99,10 +99,17 @@ async function processResponse(responseText, userId) {
 
 app.post('/api/chat/claude', async (req, res) => {
   try {
-    const { messages, userId } = req.body;
+    const { messages, userId, apiKey } = req.body;
+
+    // Use client-provided key, fall back to server env var
+    const key = apiKey || process.env.ANTHROPIC_API_KEY;
+    if (!key) {
+      return res.status(400).json({ error: 'No Anthropic API key provided. Please add your key in Settings.' });
+    }
+
     const user = userId ? await getOrCreateUser(userId) : null;
     const systemPrompt = buildFullSystemPrompt(user);
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const anthropic = new Anthropic({ apiKey: key });
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -125,16 +132,24 @@ app.post('/api/chat/claude', async (req, res) => {
     });
   } catch (error) {
     console.error('Claude API error:', error.message);
-    res.status(500).json({ error: error.message });
+    const msg = error.message.includes('401') ? 'Invalid Anthropic API key. Please check your key in Settings.' : error.message;
+    res.status(500).json({ error: msg });
   }
 });
 
 app.post('/api/chat/openai', async (req, res) => {
   try {
-    const { messages, userId } = req.body;
+    const { messages, userId, apiKey } = req.body;
+
+    // Use client-provided key, fall back to server env var
+    const key = apiKey || process.env.OPENAI_API_KEY;
+    if (!key) {
+      return res.status(400).json({ error: 'No OpenAI API key provided. Please add your key in Settings.' });
+    }
+
     const user = userId ? await getOrCreateUser(userId) : null;
     const systemPrompt = buildFullSystemPrompt(user);
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = new OpenAI({ apiKey: key });
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -159,7 +174,8 @@ app.post('/api/chat/openai', async (req, res) => {
     });
   } catch (error) {
     console.error('OpenAI API error:', error.message);
-    res.status(500).json({ error: error.message });
+    const msg = error.message.includes('401') ? 'Invalid OpenAI API key. Please check your key in Settings.' : error.message;
+    res.status(500).json({ error: msg });
   }
 });
 

@@ -12,12 +12,20 @@ export default function LoadingScreen({ progress, onFadeComplete }) {
   const [fadeOut, setFadeOut] = useState(false);
   const [quoteIndex] = useState(() => Math.floor(Math.random() * QUOTES.length));
 
+  // Auto-complete if progress hits 100 OR stays stuck for 3s (cached assets)
   useEffect(() => {
     if (progress >= 100) {
       const timer = setTimeout(() => setFadeOut(true), 400);
       return () => clearTimeout(timer);
     }
   }, [progress]);
+
+  useEffect(() => {
+    const fallback = setTimeout(() => {
+      if (!fadeOut) setFadeOut(true);
+    }, 3000);
+    return () => clearTimeout(fallback);
+  }, []);
 
   useEffect(() => {
     if (fadeOut) {

@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
 const AUDIO_FILES = {
-  wind: { src: '/audio/wind-loop.mp3', loop: true, volume: 0.15 },
-  birds: { src: '/audio/birds-loop.mp3', loop: true, volume: 0.12 },
-  water: { src: '/audio/water-loop.mp3', loop: true, volume: 0.08 },
-  crickets: { src: '/audio/crickets-loop.mp3', loop: true, volume: 0.1 },
+  wind: { src: '/audio/wind-loop.wav', loop: true, volume: 0.15 },
+  birds: { src: '/audio/birds-loop.wav', loop: true, volume: 0.12 },
+  water: { src: '/audio/water-loop.wav', loop: true, volume: 0.08 },
+  crickets: { src: '/audio/crickets-loop.wav', loop: true, volume: 0.1 },
 };
 
 export function useAmbientAudio() {
@@ -28,9 +28,9 @@ export function useAmbientAudio() {
     }
 
     // One-shot sounds
-    audioRefs.current.chime = new Audio('/audio/chime.mp3');
+    audioRefs.current.chime = new Audio('/audio/chime.wav');
     audioRefs.current.chime.volume = 0.2;
-    audioRefs.current.bell = new Audio('/audio/bell.mp3');
+    audioRefs.current.bell = new Audio('/audio/bell.wav');
     audioRefs.current.bell.volume = 0.15;
   }, []);
 

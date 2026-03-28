@@ -1,13 +1,11 @@
 import ToolResult from './ToolResult';
 
 function formatText(text) {
-  // Handle _italic_ and **bold**
   return text.split('\n').map((line, i, arr) => {
     const parts = [];
     let remaining = line;
     let key = 0;
 
-    // Process _italic_ markers
     while (remaining.includes('_')) {
       const start = remaining.indexOf('_');
       const end = remaining.indexOf('_', start + 1);
@@ -33,19 +31,20 @@ export default function ChatMessage({ message, onJournalSave }) {
 
   return (
     <div className={`chat-message ${isUser ? 'user' : 'assistant'}`}>
-      <div className="message-avatar">{isUser ? '🧘' : '🤖'}</div>
+      <div className={`message-avatar ${isUser ? 'avatar-seeker' : 'avatar-guide'}`}>
+        {isUser ? '\u2740' : '\u2638'}
+      </div>
       <div className="message-content">
         <div className="message-role">
-          {isUser ? 'Seeker' : 'Buddharoid'}
+          {isUser ? 'Seeker' : 'Guide'}
           {!isUser && message.memoriesSaved > 0 && (
             <span className="memory-badge" title={`${message.memoriesSaved} memory saved`}>
-              🧠 {message.memoriesSaved}
+              \u2727 {message.memoriesSaved}
             </span>
           )}
         </div>
         <div className="message-text">{formatText(message.content)}</div>
 
-        {/* Render tool results */}
         {message.toolResults && message.toolResults.length > 0 && (
           <div className="tool-results">
             {message.toolResults.map((result, i) => (

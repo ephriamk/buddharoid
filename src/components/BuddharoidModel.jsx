@@ -83,9 +83,9 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
     if (!groupRef.current) return;
     const t = state.clock.elapsedTime;
 
-    // Subtle breathing motion
+    // Subtle breathing motion — keep feet grounded
     const floatSpeed = isMeditating ? 0.4 : 0.8;
-    groupRef.current.position.y = Math.sin(t * floatSpeed) * 0.03;
+    groupRef.current.position.y = 0.05 + Math.sin(t * floatSpeed) * 0.015;
 
     // Mood-reactive emissive glow
     const targetColor = new THREE.Color(preset.buddhaGlowColor);
@@ -137,11 +137,11 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
 
   return (
     <group ref={groupRef}>
-      <primitive object={scene} scale={1.8} position={[0, 0, 0]} />
+      <primitive object={scene} scale={0.7} position={[0, 0.05, 0]} />
 
       {/* Halo ring behind head */}
-      <mesh ref={glowRef} position={[0, 2.8, -0.3]}>
-        <ringGeometry args={[0.5, 0.8, 64]} />
+      <mesh ref={glowRef} position={[0, 1.2, -0.2]}>
+        <ringGeometry args={[0.25, 0.4, 64]} />
         <meshBasicMaterial
           color="#ffcc44"
           transparent
@@ -156,8 +156,8 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
         ref={lightRef}
         color="#ffaa00"
         intensity={0.6}
-        distance={4}
-        position={[0, 1.5, 0.5]}
+        distance={3}
+        position={[0, 0.7, 0.3]}
       />
     </group>
   );

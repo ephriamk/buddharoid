@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
@@ -12,16 +12,15 @@ import { MOOD_PRESETS } from '../config/moodPresets';
   Chat state mapping:
   - idle → Idle (gentle loop)
   - speaking → Wave/ThumbsUp (gesturing while talking)
-  - thinking → Idle (waiting for AI)
-  - greeting → Wave
   - meditation → Sitting
-  - agree → Yes (nodding)
-  - disagree → No (shaking head)
   - celebrate → Dance
 */
 
-const FADE_DURATION = 0.4;
+// The robot should be this tall in the scene (world units)
+// Lanterns are ~1.7 tall, pagoda tier 1 walls are 2.6 — robot should be shorter than both
+const DESIRED_HEIGHT = 1.4;
 
+const FADE_DURATION = 0.4;
 const SPEAKING_ANIMS = ['Wave', 'ThumbsUp', 'Yes'];
 
 export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
@@ -29,7 +28,7 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
   const glowRef = useRef();
   const lightRef = useRef();
   const { scene, animations } = useGLTF('/models/robot-expressive.glb');
-  const { actions, mixer } = useAnimations(animations, groupRef);
+  const { actions } = useAnimations(animations, groupRef);
   const [currentAnim, setCurrentAnim] = useState('Idle');
   const speakAnimIndex = useRef(0);
   const currentGlowColor = useRef(new THREE.Color('#ffaa00'));
@@ -38,14 +37,48 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
   const preset = mood?.preset || MOOD_PRESETS.serene;
   const isMeditating = mood?.toolActive === 'meditation' || mood?.toolActive === 'breathing';
 
-  // Start with Idle
+  // Compute bounding box → scale + ground offset
+  const { modelScale, yOffset, headY, chestY } = useMemo(() => {
+    // Enable shadows on all meshes, clone materials
+    scene.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        if (child.material && !child.material._cloned) {
+          child.material = child.material.clone();
+          child.material._cloned = true;
+          child.material.envMapIntensity = 1.5;
+        }
+      }
+    });
+
+    const box = new THREE.Box3().setFromObject(scene);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+
+    // Scale to desired height
+    const s = size.y > 0 ? DESIRED_HEIGHT / size.y : 1;
+
+    // Y offset: move model up so feet (box.min.y * s) sit at y=0
+    const yOff = -(box.min.y * s);
+
+    // Derived positions for halo and light
+    const head = yOff + DESIRED_HEIGHT * 0.9;
+    const chest = yOff + DESIRED_HEIGHT * 0.55;
+
+    return { modelScale: s, yOffset: yOff, headY: head, chestY: chest };
+  }, [scene]);
+
+  // Start with Idle animation
   useEffect(() => {
     if (actions?.Idle) {
       actions.Idle.reset().setLoop(THREE.LoopRepeat, Infinity).play();
     }
   }, [actions]);
 
-  // React to state changes
+  // Switch animations based on state
   useEffect(() => {
     if (!actions) return;
 
@@ -56,8 +89,6 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
       speakAnimIndex.current++;
     } else if (isMeditating) {
       targetAnim = 'Sitting';
-    } else {
-      targetAnim = 'Idle';
     }
 
     if (targetAnim === currentAnim) return;
@@ -83,9 +114,9 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
     if (!groupRef.current) return;
     const t = state.clock.elapsedTime;
 
-    // Subtle breathing motion
+    // Very subtle breathing float
     const floatSpeed = isMeditating ? 0.4 : 0.8;
-    groupRef.current.position.y = Math.sin(t * floatSpeed) * 0.03;
+    groupRef.current.position.y = Math.sin(t * floatSpeed) * 0.02;
 
     // Mood-reactive emissive glow
     const targetColor = new THREE.Color(preset.buddhaGlowColor);
@@ -101,10 +132,6 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
 
     scene.traverse((child) => {
       if (child.isMesh && child.material) {
-        if (!child.material._cloned) {
-          child.material = child.material.clone();
-          child.material._cloned = true;
-        }
         child.material.emissive.copy(currentGlowColor.current);
         child.material.emissiveIntensity = currentGlowIntensity.current;
       }
@@ -137,11 +164,16 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
 
   return (
     <group ref={groupRef}>
-      <primitive object={scene} scale={1.8} position={[0, 0, 0]} />
+      {/* Model: auto-scaled via bounding box, feet grounded at y=0 */}
+      <primitive
+        object={scene}
+        scale={modelScale}
+        position={[0, yOffset, 0]}
+      />
 
-      {/* Halo ring behind head */}
-      <mesh ref={glowRef} position={[0, 2.8, -0.3]}>
-        <ringGeometry args={[0.5, 0.8, 64]} />
+      {/* Halo ring — positioned at head height */}
+      <mesh ref={glowRef} position={[0, headY, -0.2]}>
+        <ringGeometry args={[DESIRED_HEIGHT * 0.3, DESIRED_HEIGHT * 0.5, 64]} />
         <meshBasicMaterial
           color="#ffcc44"
           transparent
@@ -151,13 +183,13 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
         />
       </mesh>
 
-      {/* Inner glow */}
+      {/* Inner glow at chest */}
       <pointLight
         ref={lightRef}
         color="#ffaa00"
         intensity={0.6}
         distance={4}
-        position={[0, 1.5, 0.5]}
+        position={[0, chestY, 0.4]}
       />
     </group>
   );

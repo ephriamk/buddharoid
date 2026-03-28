@@ -25,7 +25,7 @@ _Every return is a new beginning._`,
   };
 }
 
-export function useChat(userId, isFirstVisit, sessionCount, userName) {
+export function useChat(userId, isFirstVisit, sessionCount, userName, getApiKey) {
   const [messages, setMessages] = useState(() => {
     if (!isFirstVisit && sessionCount > 1) {
       return [makeReturnWelcome(userName, sessionCount)];
@@ -56,10 +56,13 @@ export function useChat(userId, isFirstVisit, sessionCount, userName) {
           userMessage,
         ].map((m) => ({ role: m.role, content: m.content }));
 
+        // Get the API key for the current provider
+        const apiKey = getApiKey ? getApiKey(provider) : undefined;
+
         const response = await fetch(`/api/chat/${provider}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: apiMessages, userId }),
+          body: JSON.stringify({ messages: apiMessages, userId, apiKey }),
         });
 
         if (!response.ok) {
@@ -98,14 +101,14 @@ export function useChat(userId, isFirstVisit, sessionCount, userName) {
           ...prev,
           {
             role: 'assistant',
-            content: `🙏 My connection to the cosmic network has been disrupted. Please check your API keys in the .env file and try again.\n\n_Error: ${err.message}_`,
+            content: `🙏 My connection to the cosmic network has been disrupted. Please check your API keys in Settings and try again.\n\n_Error: ${err.message}_`,
           },
         ]);
       } finally {
         setIsLoading(false);
       }
     },
-    [messages, isLoading, provider, userId]
+    [messages, isLoading, provider, userId, getApiKey]
   );
 
   const clearChat = useCallback(() => {

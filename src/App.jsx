@@ -1,7 +1,10 @@
+import { useCallback } from 'react';
 import Scene from './components/Scene';
 import ChatPanel from './components/ChatPanel';
+import SettingsModal from './components/SettingsModal';
 import { useChat } from './hooks/useChat';
 import { useMemory } from './hooks/useMemory';
+import { useSettings } from './hooks/useSettings';
 
 export default function App() {
   const {
@@ -15,6 +18,26 @@ export default function App() {
   } = useMemory();
 
   const {
+    settings,
+    showSettings,
+    setShowSettings,
+    completeSetup,
+    clearKeys,
+    hasAnyKey,
+    availableProviders,
+  } = useSettings();
+
+  // Returns the appropriate API key for the given provider
+  const getApiKey = useCallback(
+    (provider) => {
+      if (provider === 'claude') return settings.anthropicKey || undefined;
+      if (provider === 'openai') return settings.openaiKey || undefined;
+      return undefined;
+    },
+    [settings.anthropicKey, settings.openaiKey]
+  );
+
+  const {
     messages,
     isLoading,
     isSpeaking,
@@ -22,7 +45,7 @@ export default function App() {
     setProvider,
     sendMessage,
     clearChat,
-  } = useChat(userId, isFirstVisit, sessionCount, userName);
+  } = useChat(userId, isFirstVisit, sessionCount, userName, getApiKey);
 
   return (
     <div className="app">
@@ -45,7 +68,21 @@ export default function App() {
         userName={userName}
         onClearMemories={clearMemories}
         onJournalSave={saveJournalEntry}
+        onOpenSettings={() => setShowSettings(true)}
+        availableProviders={availableProviders}
+        hasAnyKey={hasAnyKey}
       />
+
+      {/* Settings / API Key Modal */}
+      {showSettings && (
+        <SettingsModal
+          isSetup={!settings.hasCompletedSetup}
+          settings={settings}
+          onSave={completeSetup}
+          onClose={() => setShowSettings(false)}
+          onClearKeys={clearKeys}
+        />
+      )}
     </div>
   );
 }

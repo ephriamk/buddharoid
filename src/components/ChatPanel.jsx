@@ -13,11 +13,21 @@ export default function ChatPanel({
   userName,
   onClearMemories,
   onJournalSave,
+  onOpenSettings,
+  availableProviders,
+  hasAnyKey,
 }) {
   const [input, setInput] = useState('');
   const [showMemoryMenu, setShowMemoryMenu] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Auto-switch to available provider if current one has no key
+  useEffect(() => {
+    if (availableProviders && !availableProviders.includes(provider) && availableProviders.length > 0) {
+      setProvider(availableProviders[0]);
+    }
+  }, [availableProviders, provider, setProvider]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -25,7 +35,7 @@ export default function ChatPanel({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (input.trim()) {
+    if (input.trim() && hasAnyKey) {
       sendMessage(input);
       setInput('');
     }
@@ -37,6 +47,8 @@ export default function ChatPanel({
       handleSubmit(e);
     }
   };
+
+  const isProviderAvailable = (p) => availableProviders && availableProviders.includes(p);
 
   return (
     <div className="chat-panel">
@@ -52,18 +64,29 @@ export default function ChatPanel({
         <div className="chat-controls">
           <div className="provider-toggle">
             <button
-              className={`provider-btn ${provider === 'claude' ? 'active' : ''}`}
-              onClick={() => setProvider('claude')}
+              className={`provider-btn ${provider === 'claude' ? 'active' : ''} ${!isProviderAvailable('claude') ? 'disabled' : ''}`}
+              onClick={() => isProviderAvailable('claude') && setProvider('claude')}
+              title={isProviderAvailable('claude') ? 'Claude (Anthropic)' : 'Add Anthropic API key in Settings'}
             >
               Claude
             </button>
             <button
-              className={`provider-btn ${provider === 'openai' ? 'active' : ''}`}
-              onClick={() => setProvider('openai')}
+              className={`provider-btn ${provider === 'openai' ? 'active' : ''} ${!isProviderAvailable('openai') ? 'disabled' : ''}`}
+              onClick={() => isProviderAvailable('openai') && setProvider('openai')}
+              title={isProviderAvailable('openai') ? 'GPT-4o (OpenAI)' : 'Add OpenAI API key in Settings'}
             >
               GPT-4
             </button>
           </div>
+
+          {/* Settings button */}
+          <button
+            className="settings-btn"
+            onClick={onOpenSettings}
+            title="API Key Settings"
+          >
+            ⚙
+          </button>
 
           {/* Memory indicator */}
           <div className="memory-indicator">
@@ -93,6 +116,13 @@ export default function ChatPanel({
         </div>
       </div>
 
+      {/* No API key banner */}
+      {!hasAnyKey && (
+        <div className="no-key-banner" onClick={onOpenSettings}>
+          <span>⚙ Add your API key in Settings to start chatting</span>
+        </div>
+      )}
+
       {/* Messages */}
       <div className="chat-messages">
         {messages.map((msg, i) => (
@@ -116,10 +146,10 @@ export default function ChatPanel({
 
       {/* Quick Actions */}
       <div className="quick-actions">
-        <button onClick={() => sendMessage('Guide me through a meditation')} disabled={isLoading}>🧘 Meditate</button>
-        <button onClick={() => sendMessage('Give me a breathing exercise')} disabled={isLoading}>🌬️ Breathe</button>
-        <button onClick={() => sendMessage('Share some Buddhist wisdom with me')} disabled={isLoading}>📿 Wisdom</button>
-        <button onClick={() => sendMessage('Give me a journal prompt for reflection')} disabled={isLoading}>📝 Journal</button>
+        <button onClick={() => sendMessage('Guide me through a meditation')} disabled={isLoading || !hasAnyKey}>🧘 Meditate</button>
+        <button onClick={() => sendMessage('Give me a breathing exercise')} disabled={isLoading || !hasAnyKey}>🌬️ Breathe</button>
+        <button onClick={() => sendMessage('Share some Buddhist wisdom with me')} disabled={isLoading || !hasAnyKey}>📿 Wisdom</button>
+        <button onClick={() => sendMessage('Give me a journal prompt for reflection')} disabled={isLoading || !hasAnyKey}>📝 Journal</button>
       </div>
 
       {/* Input */}
@@ -129,13 +159,13 @@ export default function ChatPanel({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask the Buddharoid for guidance..."
+          placeholder={hasAnyKey ? 'Ask the Buddharoid for guidance...' : 'Add an API key in Settings to begin...'}
           rows={1}
-          disabled={isLoading}
+          disabled={isLoading || !hasAnyKey}
         />
         <button
           type="submit"
-          disabled={isLoading || !input.trim()}
+          disabled={isLoading || !input.trim() || !hasAnyKey}
           className="send-btn"
         >
           {isLoading ? '◎' : '➤'}

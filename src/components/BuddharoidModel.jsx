@@ -18,7 +18,7 @@ import { MOOD_PRESETS } from '../config/moodPresets';
 
 // The robot should be this tall in the scene (world units)
 // Lanterns are ~1.7 tall, pagoda tier 1 walls are 2.6 — robot should be shorter than both
-const DESIRED_HEIGHT = 0.8;
+const DESIRED_HEIGHT = 1.0;
 
 const FADE_DURATION = 0.4;
 const SPEAKING_ANIMS = ['Wave', 'ThumbsUp', 'Yes'];

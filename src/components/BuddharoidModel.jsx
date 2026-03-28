@@ -1,10 +1,10 @@
-import { useRef, useMemo, useState } from 'react';
+import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { MOOD_PRESETS } from '../config/moodPresets';
 
-const DESIRED_HEIGHT = 1.8; // Target height in world units
+const DESIRED_HEIGHT = 1.8;
 
 export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
   const groupRef = useRef();
@@ -17,9 +17,8 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
   const preset = mood?.preset || MOOD_PRESETS.serene;
   const isMeditating = mood?.toolActive === 'meditation' || mood?.toolActive === 'breathing';
 
-  // Compute bounding box, scale to desired height, and offset so feet touch y=0
-  const { scale, yOffset, modelHeight } = useMemo(() => {
-    // Clone materials and enable shadows
+  // Compute bounding box → derive scale, center offset, and ground offset
+  const { modelScale, offset } = useMemo(() => {
     scene.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
@@ -31,36 +30,42 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
       }
     });
 
-    // Compute bounding box of the raw model
     const box = new THREE.Box3().setFromObject(scene);
     const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
     box.getSize(size);
-    const rawHeight = size.y;
+    box.getCenter(center);
 
-    // Scale factor to reach desired height
-    const s = rawHeight > 0 ? DESIRED_HEIGHT / rawHeight : 1;
+    // Scale to desired height
+    const s = size.y > 0 ? DESIRED_HEIGHT / size.y : 1;
 
-    // After scaling, the bottom of the model will be at box.min.y * s
-    // We need to offset Y so the bottom sits at y=0
-    const offset = -(box.min.y * s);
+    // Offset: center X/Z horizontally, ground Y (feet at y=0)
+    const off = new THREE.Vector3(
+      -center.x * s,        // center horizontally
+      -box.min.y * s,       // ground the feet
+      -center.z * s         // center depth
+    );
 
-    return { scale: s, yOffset: offset, modelHeight: rawHeight };
+    console.log(`[Buddharoid] raw size: ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}, scale: ${s.toFixed(4)}, offset: ${off.x.toFixed(2)}, ${off.y.toFixed(2)}, ${off.z.toFixed(2)}`);
+
+    return { modelScale: s, offset: off };
   }, [scene]);
 
-  // Center of model after grounding (for halo/light positioning)
-  const modelCenter = yOffset + (DESIRED_HEIGHT / 2);
+  // Derived positions for halo and light based on computed model geometry
+  const headY = offset.y + DESIRED_HEIGHT * 0.85;
+  const chestY = offset.y + DESIRED_HEIGHT * 0.6;
 
   useFrame((state) => {
     if (!groupRef.current) return;
     const t = state.clock.elapsedTime;
 
-    // Subtle breathing — very small so feet stay grounded
+    // Very subtle breathing motion — keeps feet near ground
     const floatSpeed = isMeditating ? 0.4 : 0.8;
     groupRef.current.position.y = Math.sin(t * floatSpeed) * 0.02;
-    groupRef.current.rotation.y = Math.sin(t * 0.3) * (isMeditating ? 0.03 : 0.1);
+    groupRef.current.rotation.y = Math.sin(t * 0.3) * (isMeditating ? 0.03 : 0.08);
 
     // Scale pulse when speaking
-    const speakPulse = isSpeaking ? 1 + Math.sin(t * 6) * 0.015 : 1;
+    const speakPulse = isSpeaking ? 1 + Math.sin(t * 6) * 0.012 : 1;
     groupRef.current.scale.setScalar(speakPulse);
 
     // Mood-reactive emissive glow
@@ -85,12 +90,12 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
     // Glow ring
     if (glowRef.current) {
       glowRef.current.rotation.z = t * (isMeditating ? 0.2 : 0.5);
-      const glowScale = isSpeaking ? 1.2 + Math.sin(t * 3) * 0.1 :
-        isMeditating ? 1.3 + Math.sin(t * 0.8) * 0.05 : 1.0;
+      const glowScale = isSpeaking ? 1.15 + Math.sin(t * 3) * 0.08 :
+        isMeditating ? 1.2 + Math.sin(t * 0.8) * 0.05 : 1.0;
       glowRef.current.scale.setScalar(
         THREE.MathUtils.lerp(glowRef.current.scale.x, glowScale, 0.03)
       );
-      const targetOpacity = isSpeaking ? 0.4 : isMeditating ? 0.35 : 0.15;
+      const targetOpacity = isSpeaking ? 0.35 : isMeditating ? 0.3 : 0.12;
       glowRef.current.material.opacity = THREE.MathUtils.lerp(
         glowRef.current.material.opacity, targetOpacity, 0.03
       );
@@ -99,7 +104,7 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
 
     // Point light
     if (lightRef.current) {
-      const targetLightIntensity = isSpeaking ? 3 : isMeditating ? 2 : 0.8;
+      const targetLightIntensity = isSpeaking ? 2.5 : isMeditating ? 1.5 : 0.6;
       lightRef.current.intensity = THREE.MathUtils.lerp(
         lightRef.current.intensity, targetLightIntensity, 0.03
       );
@@ -109,28 +114,32 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
 
   return (
     <group ref={groupRef}>
-      {/* Model: scaled to DESIRED_HEIGHT, offset so feet touch y=0 */}
-      <primitive object={scene} scale={scale} position={[0, yOffset, 0]} />
+      {/* Model: auto-scaled and positioned via bounding box math */}
+      <primitive
+        object={scene}
+        scale={modelScale}
+        position={[offset.x, offset.y, offset.z]}
+      />
 
-      {/* Halo ring behind the model's upper body */}
-      <mesh ref={glowRef} position={[0, modelCenter * 0.85, -0.3]}>
-        <ringGeometry args={[DESIRED_HEIGHT * 0.4, DESIRED_HEIGHT * 0.6, 64]} />
+      {/* Halo ring — positioned at head height, behind model */}
+      <mesh ref={glowRef} position={[0, headY, -0.25]}>
+        <ringGeometry args={[DESIRED_HEIGHT * 0.35, DESIRED_HEIGHT * 0.55, 64]} />
         <meshBasicMaterial
           color="#ffcc44"
           transparent
-          opacity={0.15}
+          opacity={0.12}
           side={THREE.DoubleSide}
           blending={THREE.AdditiveBlending}
         />
       </mesh>
 
-      {/* Inner glow light at chest height */}
+      {/* Inner glow at chest height */}
       <pointLight
         ref={lightRef}
         color="#ffaa00"
-        intensity={0.8}
-        distance={5}
-        position={[0, modelCenter * 0.7, 0.5]}
+        intensity={0.6}
+        distance={4}
+        position={[0, chestY, 0.4]}
       />
     </group>
   );

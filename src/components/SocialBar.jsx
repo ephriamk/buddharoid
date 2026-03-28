@@ -1,9 +1,9 @@
 import { useState } from 'react';
 
 // ─── Configure these ───
-const X_URL = 'https://x.com/buddharoid';           // Replace with your X handle
-const PUMPFUN_URL = 'https://pump.fun/';             // Replace with your pump.fun link
-const SOLANA_CONTRACT = 'PASTE_YOUR_CONTRACT_ADDRESS_HERE'; // Replace with your contract address
+const X_URL = 'https://x.com/buddharoid';
+const PUMPFUN_URL = 'https://pump.fun/coin/53uELaexkz95hR4J17whkAWh9Hr2a1xFi7WEp5Fepump';
+const SOLANA_CONTRACT = '53uELaexkz95hR4J17whkAWh9Hr2a1xFi7WEp5Fepump';
 
 export default function SocialBar() {
   const [copied, setCopied] = useState(false);

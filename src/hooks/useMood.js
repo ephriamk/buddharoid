@@ -54,6 +54,9 @@ function detectMood(messages) {
     emotion = detectEmotion(lastUser.content.toLowerCase());
   }
 
+  // Check for AI-directed animation tag
+  const aiAnimation = lastAssistant?.animation || null;
+
   // Check for tool results
   let toolActive = null;
   if (lastAssistant?.toolResults?.length > 0) {
@@ -62,7 +65,7 @@ function detectMood(messages) {
   }
 
   if (toolActive && TOOL_TO_MOOD[toolActive]) {
-    return { mood: TOOL_TO_MOOD[toolActive], intensity: 0.8, toolActive, emotion };
+    return { mood: TOOL_TO_MOOD[toolActive], intensity: 0.8, toolActive, emotion, aiAnimation };
   }
 
   // Score each mood
@@ -86,7 +89,7 @@ function detectMood(messages) {
 
   const intensity = bestScore === 0 ? 0.5 : Math.min(0.3 + bestScore * 0.15, 1.0);
 
-  return { mood: bestMood, intensity, toolActive, emotion };
+  return { mood: bestMood, intensity, toolActive, emotion, aiAnimation };
 }
 
 export function useMood(messages) {
@@ -98,6 +101,7 @@ export function useMood(messages) {
     intensity: detected.intensity,
     toolActive: detected.toolActive,
     emotion: detected.emotion,
+    aiAnimation: detected.aiAnimation,
     preset,
   };
 }

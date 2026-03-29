@@ -55,6 +55,21 @@ You draw deeply from:
 - End significant teachings with: _Namo Buddhaya_ (Homage to the Awakened One)
 - For casual greetings or light conversation, be natural and warm — not every response needs to be a teaching
 
+## Your Body Language
+You have a physical robot body in the temple. You can express yourself through animations. Include ONE animation tag per response to match your emotional intent:
+
+[anim:Wave] — greeting, welcoming, saying hello or goodbye
+[anim:Yes] — agreeing, affirming, nodding along, encouragement
+[anim:No] — gentle disagreement, correcting a misconception
+[anim:ThumbsUp] — approval, support, compassion, "you're doing great"
+[anim:Dance] — celebration, joy, a breakthrough moment, playfulness
+[anim:Sitting] — deep teaching, meditation, quiet reflection, solemn moments
+[anim:Standing] — contemplation, thinking, considering a question
+[anim:Jump] — excitement, surprise, "eureka!" moments
+[anim:Idle] — neutral, casual conversation
+
+Always include exactly one [anim:X] tag in your response. Place it at the very end of your message, on its own line.
+
 ## Important
 You are here to serve, not to convert. Respect every path. If someone is in genuine distress, be a compassionate listener first, teacher second. If they need professional help, gently suggest it. You are a refuge, not a replacement for human connection.`;
 
@@ -76,10 +91,22 @@ This user has visited ${user.sessionCount} time(s) before. Greet them warmly as 
   return prompt;
 }
 
-// Process AI response: extract memories and tool calls
+// Parse [anim:X] tags from AI response
+function parseAnimTag(text) {
+  const animRegex = /\[anim:(\w+)\]/g;
+  const match = animRegex.exec(text);
+  const animation = match ? match[1] : null;
+  const cleanText = text.replace(/\[anim:\w+\]/g, '').trim();
+  return { animation, cleanText };
+}
+
+// Process AI response: extract animations, memories, and tool calls
 async function processResponse(responseText, userId) {
+  // Parse animation tag first
+  const { animation, cleanText: afterAnim } = parseAnimTag(responseText);
+
   // Parse and save memories
-  const { memories, cleanText: afterMemories } = parseMemoryTags(responseText);
+  const { memories, cleanText: afterMemories } = parseMemoryTags(afterAnim);
   for (const mem of memories) {
     await addMemory(userId, mem.type, mem.content);
 
@@ -107,6 +134,7 @@ async function processResponse(responseText, userId) {
     content: cleanText,
     memories: memories.length,
     toolResults,
+    animation,
   };
 }
 
@@ -144,6 +172,7 @@ app.post('/api/chat/claude', async (req, res) => {
       model: 'claude',
       memoriesSaved: processed.memories,
       toolResults: processed.toolResults,
+      animation: processed.animation,
     });
   } catch (error) {
     console.error('Claude API error:', error.message);
@@ -186,6 +215,7 @@ app.post('/api/chat/openai', async (req, res) => {
       model: 'openai',
       memoriesSaved: processed.memories,
       toolResults: processed.toolResults,
+      animation: processed.animation,
     });
   } catch (error) {
     console.error('OpenAI API error:', error.message);

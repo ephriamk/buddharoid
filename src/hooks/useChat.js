@@ -94,6 +94,7 @@ export function useChat(userId, isFirstVisit, sessionCount, userName, getApiKey)
           content: data.content,
           toolResults: data.toolResults || [],
           memoriesSaved: data.memoriesSaved || 0,
+          animation: data.animation || null,
         };
 
         setMessages((prev) => [...prev, assistantMessage]);

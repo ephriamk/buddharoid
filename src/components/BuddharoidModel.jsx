@@ -83,6 +83,7 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
   const moodName = mood?.mood || 'serene';
   const emotion = mood?.emotion || null;
   const toolActive = mood?.toolActive || null;
+  const aiAnimation = mood?.aiAnimation || null;
   const isMeditating = toolActive === 'meditation' || toolActive === 'breathing';
 
   // Bounding box scaling
@@ -118,15 +119,19 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
     }
   }, [actions]);
 
-  // Choose animation based on emotion → tool → mood → speaking
+  // Choose animation: AI-directed → emotion → tool → mood → speaking
   useEffect(() => {
     if (!actions) return;
 
     let targetAnim = 'Idle';
 
     if (isSpeaking) {
+      // Priority 0: AI explicitly chose an animation via [anim:X] tag
+      if (aiAnimation && actions[aiAnimation]) {
+        targetAnim = aiAnimation;
+      }
       // Priority 1: Specific emotion detected in conversation
-      if (emotion && EMOTION_TO_ANIM[emotion]) {
+      else if (emotion && EMOTION_TO_ANIM[emotion]) {
         targetAnim = EMOTION_TO_ANIM[emotion];
       }
       // Priority 2: Tool-specific animation
@@ -139,6 +144,9 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
         targetAnim = anims[speakAnimIndex.current % anims.length];
         speakAnimIndex.current++;
       }
+    } else if (aiAnimation && actions[aiAnimation]) {
+      // AI animation persists even after speaking ends (e.g. Sitting for meditation)
+      targetAnim = aiAnimation;
     } else if (toolActive && TOOL_ANIMS[toolActive]) {
       targetAnim = TOOL_ANIMS[toolActive];
     } else {
@@ -163,7 +171,7 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null }) {
       next.play();
       setCurrentAnim(targetAnim);
     }
-  }, [isSpeaking, emotion, toolActive, moodName, actions, currentAnim]);
+  }, [isSpeaking, aiAnimation, emotion, toolActive, moodName, actions, currentAnim]);
 
   useFrame((state) => {
     if (!groupRef.current) return;

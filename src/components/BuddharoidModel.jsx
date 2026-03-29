@@ -230,7 +230,7 @@ export default function BuddharoidModel({ isSpeaking = false, mood = null, onCli
         setTimeout(() => {
           const idle = resolveAnim('Idle');
           const idleAction = actions[idle];
-          if (idleAction) {
+          if (idleAction && waveAction) {
             idleAction.reset().setLoop(THREE.LoopRepeat, Infinity);
             waveAction.crossFadeTo(idleAction, FADE_DURATION, true);
             idleAction.play();

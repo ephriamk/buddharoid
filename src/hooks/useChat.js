@@ -100,8 +100,15 @@ export function useChat(userId, isFirstVisit, sessionCount, userName, getApiKey)
   });
   const [error, setError] = useState(null);
   const [toolResults, setToolResults] = useState([]);
-  const [conversationHistory, setConversationHistory] = useState(loadHistory);
+  const [conversationHistory, setConversationHistory] = useState(() => loadHistory());
   const speakingTimeoutRef = useRef(null);
+
+  // Cleanup speaking timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (speakingTimeoutRef.current) clearTimeout(speakingTimeoutRef.current);
+    };
+  }, []);
 
   // Auto-save conversation to history when messages change
   useEffect(() => {

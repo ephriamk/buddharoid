@@ -20,18 +20,17 @@ export default function JourneyCamera({ target, controlsRef }) {
 
       camera.position.lerp(targetPos.current, 0.02);
 
-      if (controlsRef?.current) {
+      if (controlsRef?.current?.target) {
         controlsRef.current.target.lerp(targetLook.current, 0.02);
         controlsRef.current.update();
       }
     } else if (!isReturning.current) {
-      // Journey just ended: start returning to default
       isReturning.current = true;
     }
 
     if (isReturning.current) {
       camera.position.lerp(DEFAULT_POSITION, 0.015);
-      if (controlsRef?.current) {
+      if (controlsRef?.current?.target) {
         controlsRef.current.target.lerp(DEFAULT_TARGET, 0.015);
         controlsRef.current.update();
       }

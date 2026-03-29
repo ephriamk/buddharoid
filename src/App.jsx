@@ -157,7 +157,7 @@ export default function App() {
         }
       });
     }
-  }, [voice, hasAnyKey, sendMessage]);
+  }, [voice.isListening, voice.stopListening, voice.startListening, hasAnyKey, sendMessage]);
 
   const handleStartJourney = useCallback((journeyId) => {
     journey.startJourney(journeyId);

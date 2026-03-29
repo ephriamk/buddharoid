@@ -34,7 +34,14 @@ export function useChat(userId, isFirstVisit, sessionCount, userName, getApiKey)
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [provider, setProvider] = useState('claude');
+  // Default to whichever provider has a key
+  const [provider, setProvider] = useState(() => {
+    if (getApiKey) {
+      if (getApiKey('claude')) return 'claude';
+      if (getApiKey('openai')) return 'openai';
+    }
+    return 'claude';
+  });
   const [error, setError] = useState(null);
   const [toolResults, setToolResults] = useState([]);
   const speakingTimeoutRef = useRef(null);
@@ -50,16 +57,25 @@ export function useChat(userId, isFirstVisit, sessionCount, userName, getApiKey)
       setIsSpeaking(true);
 
       try {
+        // Auto-switch provider if current one has no key
+        let activeProvider = provider;
+        if (getApiKey) {
+          if (!getApiKey(activeProvider)) {
+            if (getApiKey('claude')) { activeProvider = 'claude'; setProvider('claude'); }
+            else if (getApiKey('openai')) { activeProvider = 'openai'; setProvider('openai'); }
+          }
+        }
+
         // Build conversation history (exclude welcome messages for API)
         const apiMessages = [
           ...messages.filter((m) => !m.content.includes('digital bodhisattva') && !m.content.includes('Welcome back')),
           userMessage,
         ].map((m) => ({ role: m.role, content: m.content }));
 
-        // Get the API key for the current provider
-        const apiKey = getApiKey ? getApiKey(provider) : undefined;
+        // Get the API key for the active provider
+        const apiKey = getApiKey ? getApiKey(activeProvider) : undefined;
 
-        const response = await fetch(`/api/chat/${provider}`, {
+        const response = await fetch(`/api/chat/${activeProvider}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages: apiMessages, userId, apiKey }),

@@ -90,7 +90,7 @@ export default function ChatPanel({
               onClick={() => isProviderAvailable('openai') && setProvider('openai')}
               title={isProviderAvailable('openai') ? 'GPT-4o (OpenAI)' : 'Add OpenAI API key in Settings'}
             >
-              GPT-4
+              GPT-4o
             </button>
           </div>
 

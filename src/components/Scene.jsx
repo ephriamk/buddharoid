@@ -38,6 +38,7 @@ export default function Scene({
   phase = 'day',
   journeyCameraTarget = null,
   journeyActive = false,
+  onRobotClick,
 }) {
   const isDesktop = typeof window !== 'undefined' && window.innerWidth > 768;
   const controlsRef = useRef();
@@ -76,7 +77,7 @@ export default function Scene({
       <JourneyCamera target={journeyCameraTarget} controlsRef={controlsRef} />
 
       <Suspense fallback={<LoadingFallback />}>
-        <BuddharoidModel isSpeaking={isSpeaking} mood={mood} />
+        <BuddharoidModel isSpeaking={isSpeaking} mood={mood} onClickGreeting={onRobotClick} />
         <ParticleAura isSpeaking={isSpeaking} mood={mood} />
         <SpiritualEnvironment />
         <CherryBlossoms mood={mood} />

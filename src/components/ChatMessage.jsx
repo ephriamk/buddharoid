@@ -26,6 +26,19 @@ function formatText(text) {
   });
 }
 
+function relativeTime(timestamp) {
+  if (!timestamp) return '';
+  const diff = Date.now() - timestamp;
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 export default function ChatMessage({ message, onJournalSave }) {
   const isUser = message.role === 'user';
 
@@ -37,10 +50,16 @@ export default function ChatMessage({ message, onJournalSave }) {
       <div className="message-content">
         <div className="message-role">
           {isUser ? 'Seeker' : 'Guide'}
+          {!isUser && message.provider && (
+            <span className="provider-badge">{message.provider === 'claude' ? 'Claude' : 'OpenAI'}</span>
+          )}
           {!isUser && message.memoriesSaved > 0 && (
             <span className="memory-badge" title={`${message.memoriesSaved} memory saved`}>
-              \u2727 {message.memoriesSaved}
+              {'\u2727'} {message.memoriesSaved}
             </span>
+          )}
+          {message.timestamp && (
+            <span className="message-time">{relativeTime(message.timestamp)}</span>
           )}
         </div>
         <div className="message-text">{formatText(message.content)}</div>

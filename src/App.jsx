@@ -6,6 +6,8 @@ import LoadingScreen from './components/LoadingScreen';
 import Onboarding from './components/Onboarding';
 import SceneToggle from './components/SceneToggle';
 import SocialBar from './components/SocialBar';
+import Toast from './components/Toast';
+import JourneyOverlay from './components/JourneyOverlay';
 import { useChat } from './hooks/useChat';
 import { useMemory } from './hooks/useMemory';
 import { useSettings } from './hooks/useSettings';
@@ -108,6 +110,24 @@ export default function App() {
   // Mobile scene toggle
   const [sceneExpanded, setSceneExpanded] = useState(true);
 
+  // Toast notifications
+  const [toast, setToast] = useState(null);
+
+  // Show toast when AI saves a memory
+  useEffect(() => {
+    if (messages.length > 0) {
+      const last = messages[messages.length - 1];
+      if (last.role === 'assistant' && last.memoriesSaved > 0) {
+        setToast(`Remembered ${last.memoriesSaved} insight${last.memoriesSaved > 1 ? 's' : ''}`);
+      }
+    }
+  }, [messages]);
+
+  // Robot click greeting
+  const handleRobotClick = useCallback((greeting) => {
+    setToast(greeting);
+  }, []);
+
   const handleProgress = useCallback((progress) => {
     setLoadProgress(progress);
   }, []);
@@ -173,12 +193,23 @@ export default function App() {
             phase={dayNight.phase}
             journeyCameraTarget={journey.cameraTarget}
             journeyActive={!!journey.activeJourney}
+            onRobotClick={handleRobotClick}
           />
           <div className="scene-overlay">
             <h1 className="title-overlay">BUDDHAROID</h1>
             <p className="subtitle-overlay">Seek Enlightenment Through Code</p>
             <SocialBar />
           </div>
+
+          {/* Journey cinematic overlay */}
+          {journey.activeJourney && (
+            <JourneyOverlay
+              narration={journey.narration}
+              journeyName={journey.activeJourney.name}
+              step={journey.currentStep}
+              totalSteps={journey.totalSteps}
+            />
+          )}
         </div>
 
         <SceneToggle
@@ -212,6 +243,11 @@ export default function App() {
           audioEnabled={ambientAudio.audioEnabled}
           onToggleAudio={ambientAudio.toggleAudio}
         />
+
+        {/* Toast notification */}
+        {toast && (
+          <Toast message={toast} onDone={() => setToast(null)} />
+        )}
 
         {showSettings && (
           <SettingsModal

@@ -1101,8 +1101,8 @@ html, body, #root {
   flex-shrink: 0;
 }
 
-.voice-enabled { border-color: var(--accent-gold) !important; color: var(--accent-gold) !important; }
-.audio-active { border-color: var(--accent-gold) !important; color: var(--accent-gold) !important; }
+.voice-enabled { color: var(--accent-gold); }
+.audio-active { color: var(--accent-gold); }
 
 /* === Journey Panel === */
 .journey-selector {
@@ -1414,6 +1414,95 @@ html, body, #root {
 .breath-circle.inhale { transform: scale(1.2); border-color: #6688ff; box-shadow: 0 0 40px rgba(102, 136, 255, 0.2); }
 .breath-circle.exhale { transform: scale(0.8); border-color: var(--accent-gold); box-shadow: 0 0 40px rgba(255, 204, 68, 0.2); }
 .breath-circle.hold { border-color: var(--accent-purple); box-shadow: 0 0 30px rgba(102, 68, 255, 0.15); }
+
+/* === Toast === */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  background: rgba(10, 10, 26, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(197, 160, 63, 0.25);
+  border-radius: 12px;
+  color: var(--accent-gold);
+  font-size: 0.8rem;
+  font-style: italic;
+  z-index: 800;
+  pointer-events: none;
+  max-width: 80%;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.toast-enter { animation: toastIn 0.4s ease both; }
+.toast-exit { animation: toastOut 0.4s ease both; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateX(-50%) translateY(-10px); } }
+
+/* === Journey Overlay === */
+.journey-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  z-index: 15;
+}
+
+.journey-letterbox {
+  height: 40px;
+  background: rgba(0, 0, 0, 0.6);
+  transition: height 0.5s ease;
+}
+
+.journey-overlay-content {
+  position: absolute;
+  bottom: 55px;
+  left: 20px;
+  right: 20px;
+  text-align: center;
+  animation: fadeSlideIn 0.5s ease both;
+}
+
+.journey-overlay-text {
+  font-size: 0.85rem;
+  color: #f0e8d8;
+  line-height: 1.6;
+  font-style: italic;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  max-width: 500px;
+  margin: 0 auto 6px;
+}
+
+.journey-overlay-meta {
+  font-size: 0.65rem;
+  color: rgba(197, 160, 63, 0.6);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* === Message Timestamps + Provider Badge === */
+.message-time {
+  margin-left: auto;
+  font-size: 0.55rem;
+  color: rgba(144, 144, 176, 0.5);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.provider-badge {
+  margin-left: 6px;
+  padding: 1px 5px;
+  font-size: 0.5rem;
+  border-radius: 4px;
+  background: rgba(102, 68, 255, 0.15);
+  color: rgba(102, 68, 255, 0.7);
+  letter-spacing: 0;
+  text-transform: none;
+}
 
 /* === Responsive === */
 @media (max-width: 768px) {

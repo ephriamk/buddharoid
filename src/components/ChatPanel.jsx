@@ -88,9 +88,9 @@ export default function ChatPanel({
             <button
               className={`provider-btn ${provider === 'openai' ? 'active' : ''} ${!isProviderAvailable('openai') ? 'disabled' : ''}`}
               onClick={() => isProviderAvailable('openai') && setProvider('openai')}
-              title={isProviderAvailable('openai') ? 'GPT-4o (OpenAI)' : 'Add OpenAI API key in Settings'}
+              title={isProviderAvailable('openai') ? 'OpenAI' : 'Add OpenAI API key in Settings'}
             >
-              GPT-4o
+              OpenAI
             </button>
           </div>
 
